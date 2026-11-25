@@ -105,6 +105,44 @@ input,select,textarea{accent-color:#0F5C5C}
   color: #0F5C5C;
 }
 
+.whatsapp-float {
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  z-index: 41;
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #25D366;
+  box-shadow: 0 8px 24px rgba(18, 140, 126, 0.3);
+  color: #fff;
+  text-decoration: none;
+  transition: background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.whatsapp-float svg {
+  width: 30px;
+  height: 30px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.whatsapp-float:hover,
+.whatsapp-float:focus-visible {
+  background: #128C7E;
+  box-shadow: 0 10px 28px rgba(18, 140, 126, 0.38);
+  transform: translateY(-2px);
+}
+
+.whatsapp-float:active {
+  transform: scale(0.96);
+}
+
 .mobile-links {
   position: absolute;
   top: calc(100% + 8px);
@@ -157,6 +195,56 @@ input,select,textarea{accent-color:#0F5C5C}
 .mobile-links .mobile-links-cta:focus-visible {
   background: #FF9B85;
   color: #3B230F;
+}
+
+header a.back,
+header a[aria-label^="الرجوع"],
+header a[aria-label^="العودة"] {
+  position: absolute;
+  left: clamp(12px, 5vw, 64px);
+  z-index: 5;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid #D4EFEB;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(15, 92, 92, 0.1);
+  color: #0F5C5C;
+  font-size: 0;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+header a.back::before,
+header a[aria-label^="الرجوع"]::before,
+header a[aria-label^="العودة"]::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  background: currentColor;
+  clip-path: polygon(10% 50%, 43% 17%, 50% 24%, 31% 44%, 90% 44%, 90% 56%, 31% 56%, 50% 76%, 43% 83%);
+}
+
+header a.back:hover,
+header a.back:focus-visible,
+header a[aria-label^="الرجوع"]:hover,
+header a[aria-label^="الرجوع"]:focus-visible,
+header a[aria-label^="العودة"]:hover,
+header a[aria-label^="العودة"]:focus-visible {
+  border-color: #0F5C5C;
+  background: #D4EFEB;
+  color: #0B4747;
+  transform: translateY(-1px);
+}
+
+header a.back:active,
+header a[aria-label^="الرجوع"]:active,
+header a[aria-label^="العودة"]:active {
+  transform: scale(0.96);
 }
 
 /* Shared responsive layout guards for desktop, tablet, and mobile screens. */
@@ -273,6 +361,15 @@ dialog {
   select,
   textarea {
     font-size: 16px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .whatsapp-float {
+    right: 14px;
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+    width: 54px;
+    height: 54px;
   }
 }
 

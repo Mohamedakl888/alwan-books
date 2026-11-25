@@ -32,6 +32,16 @@ mobileCta.className='alwan-mobile-cta';
 mobileCta.innerHTML='<span><strong>شاهد صفحتين مجانًا</strong>قبل إتمام الدفع</span><a href="customize.html">ابدأ تجربتك</a>';
 document.body.append(mobileCta);
 
+const whatsapp=document.createElement('a');
+whatsapp.className='whatsapp-float';
+whatsapp.href='https://wa.me/966562994612?text='+encodeURIComponent('مرحبًا، أود الاستفسار عن كتاب ألوان.');
+whatsapp.target='_blank';
+whatsapp.rel='noopener noreferrer';
+whatsapp.setAttribute('aria-label','تواصل معنا عبر واتساب');
+whatsapp.title='تواصل معنا عبر واتساب';
+whatsapp.innerHTML='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.2 11.6a8.2 8.2 0 0 1-12.1 7.2L4 20l1.2-4a8.2 8.2 0 1 1 15-4.4Z"></path><path d="M9 8.4c.2-.5.5-.5.8-.5l.8 1.8-1 1.1a8 8 0 0 0 3.7 3.7l1.1-1 1.8.8c0 .4-.1.7-.5 1-1 .9-3.1.1-5.3-2.1C8.3 11 8.1 9.4 9 8.4Z"></path></svg>';
+document.body.append(whatsapp);
+
 const footer=document.createElement('footer');
 footer.className='alwan-footer';
 footer.innerHTML=`

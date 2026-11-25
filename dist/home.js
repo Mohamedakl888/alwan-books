@@ -46,18 +46,3 @@ mobileStart.textContent='خصص كتاب طفلك';
 mobileStart.setAttribute('aria-label','خصص كتاب طفلك');
 mobileActions.append(mobileStart,whatsapp);
 document.body.append(mobileActions);
-
-const footer=document.createElement('footer');
-footer.className='alwan-footer';
-footer.innerHTML=`
-  <span class="brand-logo" role="img" aria-label="ألوان"></span>
-  <p>كتاب تلوين مخصص باسم طفلك وصورته واهتمامات العالم اللي يحبّه.</p>
-  <nav aria-label="روابط ألوان">
-    <a href="#steps">كيف يعمل؟</a>
-    <a href="#examples">أمثلة من الكتاب</a>
-    <a href="#hero-cta-pdf">النسخ والأسعار</a>
-    <a href="#faq">الأسئلة الشائعة</a>
-  </nav>
-  <small>© ${new Date().getFullYear()} ألوان — هدايا تصنع ذكريات</small>`;
-const main=document.querySelector('main');
-main?.insertAdjacentElement('afterend',footer);

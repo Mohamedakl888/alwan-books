@@ -5,45 +5,6 @@ dialog{margin:auto;padding:1rem;border:0;border-radius:20px;background:white;col
   display: none;
 }
 
-.alwan-footer {
-  background: #0F5C5C;
-  color: #fff;
-  padding: 28px 20px 24px;
-  text-align: center;
-}
-
-.alwan-footer .brand-logo {
-  filter: brightness(0) invert(1);
-  margin: 0 auto 10px;
-}
-
-.alwan-footer p {
-  max-width: 620px;
-  margin: 8px auto 16px;
-  color: #D4EFEB;
-  font-size: 14px;
-  line-height: 1.8;
-}
-
-.alwan-footer nav {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px 18px;
-  margin-bottom: 16px;
-}
-
-.alwan-footer a {
-  color: #fff;
-  text-decoration: none;
-  font-weight: 700;
-}
-
-.alwan-footer small {
-  display: block;
-  color: #D4EFEB;
-}
-
 @media (max-width: 1023px) {
   body {
     padding-bottom: 78px;

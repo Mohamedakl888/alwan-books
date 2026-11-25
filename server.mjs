@@ -107,6 +107,12 @@ app.patch("/api/orders/:id/status", requireAdmin, (req, res) => {
   res.json({ id: order.id, status: order.status });
 });
 
+app.get(["/", "/index.html"], (_req, res) => {
+  const homepage = fs.readFileSync(path.join(dist, "index.html"), "utf8");
+  if (!homepage.includes("</footer>")) return res.status(500).send("Homepage footer was not found");
+  res.type("html").send(homepage.replace("</footer>", '<a class="admin-dashboard-link" href="/admin">إدارة الطلبات</a></footer>'));
+});
+
 app.use("/admin", express.static(path.join(root, "admin")));
 app.get("/admin", (_req, res) => res.redirect("/admin/dashboard.html"));
 app.use(express.static(dist));

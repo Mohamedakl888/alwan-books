@@ -1,0 +1,84 @@
+:root{
+ --brand-teal:#0F5C5C;--brand-orange:#EB7823;--brand-turquoise:#52B788;--brand-coral:#FF9B85;--brand-slate:#52615C;
+ --nw-color-ivory-50:#F2F9F6;--color-surface-base:#F2F9F6;
+ --nw-color-amber-400:#EB7823;--nw-color-amber-500:#EB7823;--nw-color-amber-600:#B95512;--nw-color-orange-500:#EB7823;
+ --nw-color-teal-50:#D4EFEB;--nw-color-teal-100:#D4EFEB;--nw-color-teal-200:#52B788;--nw-color-teal-300:#52B788;--nw-color-teal-400:#52B788;--nw-color-teal-500:#0F5C5C;--nw-color-teal-600:#0B4747;
+ --color-green-brand:#0F5C5C;--color-green-selection:#0F5C5C;
+ --nw-color-mint-100:#D4EFEB;--nw-color-mint-500:#0F5C5C;--nw-color-mint-600:#0B4747;
+ --nw-color-coral-400:#FF9B85;--nw-color-pink-300:#FF9B85;--nw-color-pink-400:#FF9B85;--nw-color-pink-500:#FF9B85;--nw-color-pink-50:#FFE6D6;--nw-color-pink-100:#FFD8E2;
+ --nw-color-blue-400:#52B788;--nw-color-blue-100:#D4EFEB;--nw-color-purple-400:#52615C;--nw-color-purple-100:#EDF0F3;
+ --nw-color-gray-500:#52615C;--nw-color-ink-900:#243A3A;
+ --nw-color-wash-aqua:#D4EFEB;--nw-color-wash-sage:#D4EFEB;--nw-color-wash-lilac:#EDF0F3;--nw-color-wash-rose:#FFD8E2;--nw-color-wash-mint:#D4EFEB;--nw-color-wash-sky:#D4EFEB;--nw-color-wash-butter:#FFE0BD;
+ --nw-button-primary-text:#362719;
+}
+.brand-logo{display:inline-block;position:relative;width:150px;height:50px;flex-shrink:0;vertical-align:middle;background:url("assets/alwan-logo.webp") center / contain no-repeat;mix-blend-mode:normal}
+header{background-color:#F2F9F6!important}header a:first-child{line-height:1}.wordmark{line-height:1}
+body:not(:has(#hero)){background:#F2F9F6}
+h1,h2,h3{color:#0F5C5C}
+.order,.next,#resume,#keep-order,#continue-single{background:#EB7823!important;color:#362719!important}
+.trial-submit,.primary,.retry,.pick:not(.filled .pick){background:#0F5C5C!important;color:white!important}
+.trial,.arrival,.result,.prep-info,.done{background-color:#D4EFEB;color:#0F5C5C}
+.result[data-state=rejected]{background:#FFE6D6;color:#8B3D34}
+.result[data-state=rejected] .result-icon{background:white}
+.gender label:last-child,.ideas button:nth-child(3n){background:#FFE6D6}
+.gender label:first-child,.ideas button:nth-child(3n+1){background:#D4EFEB}
+.ideas button:nth-child(3n+2){background:#FFF2B2}
+.dock{background:#F2F9F6F5}
+[data-testid="language-switcher"]{display:none}
+@media(max-width:600px){.brand-logo{width:126px;height:42px;background-size:contain;background-position:center}}
+
+
+:root{
+ --nw-color-amber-400:#EB7823;--nw-color-amber-500:#0F5C5C;--nw-color-amber-600:#0F5C5C;--nw-color-orange-500:#EB7823;
+ --nw-color-purple-400:#52B788;--nw-color-purple-100:#FFE6D6;
+ --nw-color-teal-500:#0F5C5C;--nw-color-teal-600:#0F5C5C;
+ --nw-color-teal-300:#52B788;--nw-color-teal-400:#0F5C5C;
+ --nw-color-mint-500:#0F5C5C;--nw-color-mint-600:#0F5C5C;
+ --nw-color-blue-400:#0F5C5C;--nw-color-blue-100:#D4EFEB;
+ --nw-color-wash-aqua:#D4EFEB;--nw-color-wash-mint:#D4EFEB;--nw-color-wash-sage:#FFE6D6;
+ --nw-color-wash-lilac:#FFD8E2;--nw-color-wash-sky:#D4EFEB;--nw-color-wash-rose:#FFE6D6;--nw-color-wash-butter:#FFD97D;
+ --nw-color-sun-300:#EB7823;--nw-color-gold-400:#EB7823;
+ --nw-button-primary-text:#FFFFFF;--nw-color-ink-900:#243A36;--color-text-secondary:#52615C;--color-text-muted:#52615C;
+}
+h1,h2,h3{color:#0F5C5C}
+.nw-btn-primary,.order,.next,#resume,#keep-order,#continue-single,.trial-submit,.primary,.retry,.pick:not(.filled .pick),#view-pages{background:#0F5C5C!important;color:#fff!important;border-color:#0F5C5C!important}
+.nw-btn-primary:hover,.order:hover,.next:hover,#resume:hover,#continue-single:hover,.trial-submit:hover{background:#0F5C5C!important}
+.nw-btn-primary *, .order *, .next *{color:inherit}
+.trial,#accept-sibling,.another button,#prepare-example,#retry-pages{color:#0F5C5C!important}
+.trial,#accept-sibling{background:#FFE6D6!important;border-color:#52B788!important}
+.trial small,.summary i,.result-icon,aside b,.ages label:has(:checked){background:#0F5C5C!important;color:#fff!important}
+i,.return-icon,.sibling-icon,.sheet-icon{background:#D4EFEB!important;color:#0F5C5C!important}
+.summary i{background:#0F5C5C!important;color:#fff!important}
+.ages label{color:#243A36}.ages label:has(:checked){color:white}
+.gender label,.ideas button{color:#243A36}
+.gender label:has(:checked),.ideas button.active{outline-color:#0F5C5C!important}
+.sizes button,.delivery button{color:#243A36}
+.sizes .chosen,.delivery .chosen,#kids [aria-pressed=true]{background:#D4EFEB!important;border-color:#0F5C5C!important;color:#243A36!important}
+.sizes .chosen::before,.delivery .chosen::before{background:#0F5C5C!important;color:#fff!important}
+.sizes strong,.delivery b,.total strong{color:#0F5C5C!important}
+mark{background:#FFD97D!important;color:#563900!important;border-color:#EB7823!important}
+.prep-box li[data-state=busy]{background:#D4EFEB}
+.prep-box small,.hint,.prompt,.count,.intro,.upload-hint,.trial-intro p,dt{color:#52615C}
+.status,.arrival,.feedback,.prep-info,.prep-box [role=status],#sibling-saving{color:#0F5C5C}
+#sibling-saving{background:#D4EFEB}
+.pill{color:#0F5C5C;background:#D4EFEB}
+.notice{background:#FFF2B2;color:#563900;border-color:#EB7823}
+.result[data-state=rejected]{background:#FFF0ED;color:#8B3D34}
+.result[data-state=rejected] .result-icon{background:white!important;color:#8B3D34!important}
+input,select,textarea{accent-color:#0F5C5C}
+:focus-visible{outline:3px solid #0F5C5C;outline-offset:3px}
+
+.photo-guide-labels{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:10px 5px;background:#D4EFEB;border-radius:0 0 16px 16px;font-size:13px;text-align:center;color:#243A36}.photo-guide-labels span:first-child{color:#0F5C5C;font-weight:700}.photo-guide img{border-radius:16px 16px 0 0;width:100%;height:auto}
+
+/* Approved Alwan palette. */
+:root{--brand-teal:#0F5C5C;--brand-orange:#EB7823;--brand-peach:#FF9B85;--brand-mint:#52B788;--brand-butter:#FFD97D;--nw-color-ivory-50:#F2F9F6;--color-surface-base:#F2F9F6;--nw-color-amber-400:#FFD97D;--nw-color-amber-500:#EB7823;--nw-color-amber-600:#C75E12;--nw-color-orange-500:#EB7823;--nw-color-teal-50:#F2F9F6;--nw-color-teal-100:#D4EFEB;--nw-color-teal-200:#D4EFEB;--nw-color-teal-300:#52B788;--nw-color-teal-400:#0F5C5C;--nw-color-teal-500:#0F5C5C;--nw-color-teal-600:#0B4747;--nw-color-mint-100:#D4EFEB;--nw-color-mint-500:#0F5C5C;--nw-color-mint-600:#0B4747;--nw-color-pink-50:#FFD8E2;--nw-color-pink-100:#FFD8E2;--nw-color-pink-300:#FF9B85;--nw-color-pink-400:#FF9B85;--nw-color-purple-100:#E8E5FF;--nw-color-purple-400:#0F5C5C;--nw-color-blue-100:#E0F2FE;--nw-color-blue-400:#0F5C5C;--nw-color-wash-aqua:#D4EFEB;--nw-color-wash-sage:#E2F4C5;--nw-color-wash-lilac:#E8E5FF;--nw-color-wash-rose:#FFD8E2;--nw-color-wash-mint:#D4EFEB;--nw-color-wash-sky:#E0F2FE;--nw-color-wash-butter:#FFF2B2;--nw-button-primary-text:#3B230F;--nw-color-ink-900:#243A36;--color-text-secondary:#52615C;--color-text-muted:#52615C}
+.nw-btn-primary,.order,.next,#resume,#keep-order,#continue-single{background:#EB7823!important;color:#3B230F!important;border-color:#EB7823!important}
+.nw-btn-primary:hover,.order:hover,.next:hover,#resume:hover,#continue-single:hover{background:#FF9B85!important;color:#3B230F!important}
+.trial-submit,.primary,.retry,.pick:not(.filled .pick),#view-pages{background:#0F5C5C!important;color:white!important;border-color:#0F5C5C!important}
+.trial-submit:hover{background:#0B4747!important;color:white!important}
+.trial,#accept-sibling{background:#D4EFEB!important;color:#0F5C5C!important;border-color:#0F5C5C!important}
+.gender label:first-child{background:#E0F2FE}.gender label:last-child{background:#FFD8E2}
+.ideas button:nth-child(4n+1){background:#FFE6D6}.ideas button:nth-child(4n+2){background:#FFF2B2}.ideas button:nth-child(4n+3){background:#E8E5FF}.ideas button:nth-child(4n){background:#E2F4C5}
+.brand-logo{width:132px;height:58px;background-image:url("assets/alwan-logo.webp")}
+@media(max-width:600px){.brand-logo{width:112px;height:50px}}
+.photo-guide-labels{font-size:14px}

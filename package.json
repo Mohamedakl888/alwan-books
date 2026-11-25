@@ -1,0 +1,14 @@
+{
+  "name": "alwan-books",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Arabic RTL personalized coloring-book website",
+  "scripts": {
+    "dev": "serve dist -l 8080",
+    "start": "serve dist -l 8080",
+    "validate": "node scripts/validate.mjs"
+  },
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}

@@ -18,7 +18,7 @@ const menu=document.querySelector('button[aria-label="فتح القائمة"]');
 if(menu){
  const nav=document.createElement('nav');nav.className='mobile-links';nav.setAttribute('aria-label','القائمة الرئيسية');nav.hidden=true;
  nav.innerHTML=document.querySelector('header nav').innerHTML;
- const start=document.createElement('a');start.className='mobile-links-cta';start.href='customize.html';start.textContent='ابدأ تجربتك';
+ const start=document.createElement('a');start.className='mobile-links-cta';start.href='customize.html';start.textContent='خصص كتاب طفلك';
  nav.append(start);
  menu.parentElement.append(nav);
  function toggle(open){nav.hidden=!open;menu.setAttribute('aria-expanded',String(open));}
@@ -42,8 +42,8 @@ whatsapp.innerHTML='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><pat
 const mobileStart=document.createElement('a');
 mobileStart.className='alwan-mobile-start-float';
 mobileStart.href='customize.html';
-mobileStart.textContent='ابدأ تجربتك';
-mobileStart.setAttribute('aria-label','ابدأ تجربتك المجانية');
+mobileStart.textContent='خصص كتاب طفلك';
+mobileStart.setAttribute('aria-label','خصص كتاب طفلك');
 mobileActions.append(mobileStart,whatsapp);
 document.body.append(mobileActions);
 

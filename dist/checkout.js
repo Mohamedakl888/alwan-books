@@ -28,9 +28,41 @@ for(const [country,code,flag] of countries){
  el('prefix').add(new Option(flag+' '+code,code));
 }
 el('mobile').oninput=()=>el('mobile').setCustomValidity('');
-document.querySelector('form').onsubmit=e=>{
+document.querySelector('form').onsubmit=async e=>{
  e.preventDefault();
  const digits=el('mobile').value.replace(/[٠-٩]/g,d=>d.charCodeAt(0)-1632).replace(/[\s()-]/g,'');
  if(!/^\d{7,12}$/.test(digits)){el('mobile').setCustomValidity('أدخل رقم الجوال بدون مفتاح الدولة.');el('mobile').reportValidity();return}
- el('paymentStatus').textContent='بوابة الدفع غير مربوطة حاليًا. لم يُرسل الطلب أو يُخصم أي مبلغ.';
+ const draft=JSON.parse(sessionStorage.getItem('alwan-draft')||'{}');
+ const kids=draft.kids?.length?draft.kids:[draft];
+ const payload={
+  customer:{
+   fullname:el('fullname').value.trim(),
+   gender:document.querySelector('[name=gender]:checked')?.value||'',
+   mobile:digits,
+   email:document.querySelector('input[type=email]').value.trim(),
+   country:el('country').value
+  },
+  children:kids.map(k=>({
+   name:k.child||'',
+   gender:k.gender||'',
+   age:k.age||'',
+   interests:k.extra||k.interests?.join('، ')||'',
+   photo:k.photo||null
+  })),
+  package:{sizes,delivery:fast?'express':'standard',fast},
+  total:order.total
+ };
+ const button=el('pay');
+ button.disabled=true;
+ el('paymentStatus').textContent='جارٍ تسجيل الطلب…';
+ try{
+  const response=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const result=await response.json();
+  if(!response.ok)throw Error(result.error||'تعذّر تسجيل الطلب');
+  el('paymentStatus').textContent='تم تسجيل الطلب بنجاح: '+result.id+' · لم يُخصم أي مبلغ ولم تُفعّل بوابة الدفع بعد.';
+  button.textContent='تم تسجيل الطلب ✓';
+ }catch(error){
+  button.disabled=false;
+  el('paymentStatus').textContent=error.message;
+ }
 };

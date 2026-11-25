@@ -96,14 +96,24 @@ const trialSheet=document.getElementById('trial-sheet');
 const contact=document.getElementById('trial-contact');
 trialSheet.querySelector('.trial-close').onclick=()=>trialSheet.close();
 contact.oninput=()=>{contact.elements.mobile.setCustomValidity('');contact.querySelector('.trial-message').textContent=''};
-contact.onsubmit=event=>{
+contact.onsubmit=async event=>{
  event.preventDefault();
  const digits=contact.elements.mobile.value.replace(/[٠-٩]/g,c=>c.charCodeAt(0)-1632).replace(/[ ()-]/g,'');
  if(!/^\d{7,12}$/.test(digits)){
   contact.elements.mobile.setCustomValidity('أدخل رقم جوال صحيحًا بدون مفتاح الدولة.');
   contact.elements.mobile.reportValidity();return;
  }
- contact.querySelector('.trial-message').textContent='إرسال رمز واتساب غير مفعّل حاليًا. يمكنك عرض نموذج الصفحتين هنا.';
+ contact.querySelector('.trial-message').textContent='جارٍ تسجيل طلب التجربة…';
+ try{
+  const response=await fetch('/api/trials',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+   parentName:contact.elements.parentName.value.trim(),
+   parentGender:contact.elements.parentGender.value,
+   mobile:digits
+  })});
+  const result=await response.json();
+  if(!response.ok)throw Error(result.error||'تعذّر تسجيل طلب التجربة');
+  contact.querySelector('.trial-message').textContent='تم تسجيل طلب التجربة '+result.id+'. إرسال واتساب والرمز يتطلب ربط مزوّد الرسائل.';
+ }catch(error){contact.querySelector('.trial-message').textContent=error.message}
 };
 const preparation=document.getElementById('prep');
 const intro=trialSheet.querySelector('.trial-intro');

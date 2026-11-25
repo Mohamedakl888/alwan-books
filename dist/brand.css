@@ -82,3 +82,128 @@ input,select,textarea{accent-color:#0F5C5C}
 .brand-logo{width:132px;height:58px;background-image:url("assets/alwan-logo.webp")}
 @media(max-width:600px){.brand-logo{width:112px;height:50px}}
 .photo-guide-labels{font-size:14px}
+
+/* Shared responsive layout guards for desktop, tablet, and mobile screens. */
+html {
+  width: 100%;
+  min-width: 280px;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-width: 280px;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea,
+a {
+  max-width: 100%;
+  touch-action: manipulation;
+}
+
+dialog {
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  box-sizing: border-box;
+}
+
+@media (max-width: 1023px) {
+  body {
+    width: 100%;
+  }
+
+  main {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  body {
+    font-size: 16px;
+  }
+
+  header {
+    min-height: 60px;
+  }
+
+  .brand-logo {
+    width: 112px;
+    height: 50px;
+  }
+
+  main {
+    padding-inline: 12px;
+  }
+
+  .sizes,
+  .choices,
+  .phone,
+  .trial-genders,
+  .trial-number {
+    flex-wrap: wrap;
+  }
+
+  .sizes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sizes button,
+  .delivery button,
+  .choices label {
+    min-width: 0;
+  }
+
+  .phone select,
+  .trial-number select {
+    width: 110px;
+  }
+
+  .phone input,
+  .trial-number input {
+    flex: 1 1 180px;
+  }
+
+  .book dl,
+  .row {
+    min-width: 0;
+  }
+
+  .book dl {
+    grid-template-columns: 1fr;
+  }
+
+  .book dl div:last-child {
+    grid-column: auto;
+  }
+
+  .dock {
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  main {
+    padding-inline: 8px;
+  }
+
+  .sizes {
+    grid-template-columns: 1fr;
+  }
+
+  .photo-guide-labels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

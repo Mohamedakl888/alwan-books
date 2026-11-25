@@ -16,8 +16,10 @@ document.querySelectorAll('#examples button[aria-label^="الصفحة"]').forEac
 });
 const menu=document.querySelector('button[aria-label="فتح القائمة"]');
 if(menu){
- const nav=document.createElement('nav');nav.className='mobile-links';nav.hidden=true;
+ const nav=document.createElement('nav');nav.className='mobile-links';nav.setAttribute('aria-label','القائمة الرئيسية');nav.hidden=true;
  nav.innerHTML=document.querySelector('header nav').innerHTML;
+ const start=document.createElement('a');start.className='mobile-links-cta';start.href='customize.html';start.textContent='ابدأ تجربتك';
+ nav.append(start);
  menu.parentElement.append(nav);
  function toggle(open){nav.hidden=!open;menu.setAttribute('aria-expanded',String(open));}
  menu.onclick=()=>toggle(nav.hidden);

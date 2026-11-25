@@ -27,11 +27,6 @@ if(menu){
  document.addEventListener('keydown',e=>{if(e.key==='Escape')toggle(false);});
 }
 
-const mobileCta=document.createElement('div');
-mobileCta.className='alwan-mobile-cta';
-mobileCta.innerHTML='<span><strong>شاهد صفحتين مجانًا</strong>قبل إتمام الدفع</span><div class="alwan-mobile-actions"><a class="alwan-mobile-start" href="customize.html">ابدأ تجربتك</a></div>';
-document.body.append(mobileCta);
-
 const whatsapp=document.createElement('a');
 whatsapp.className='whatsapp-float';
 whatsapp.href='https://wa.me/966562994612?text='+encodeURIComponent('مرحبًا، أود الاستفسار عن كتاب ألوان.');
@@ -40,10 +35,14 @@ whatsapp.rel='noopener noreferrer';
 whatsapp.setAttribute('aria-label','تواصل معنا عبر واتساب');
 whatsapp.title='تواصل معنا عبر واتساب';
 whatsapp.innerHTML='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.2 11.6a8.2 8.2 0 0 1-12.1 7.2L4 20l1.2-4a8.2 8.2 0 1 1 15-4.4Z"></path><path d="M9 8.4c.2-.5.5-.5.8-.5l.8 1.8-1 1.1a8 8 0 0 0 3.7 3.7l1.1-1 1.8.8c0 .4-.1.7-.5 1-1 .9-3.1.1-5.3-2.1C8.3 11 8.1 9.4 9 8.4Z"></path></svg>';
-const mobileWhatsapp=whatsapp.cloneNode(true);
-mobileWhatsapp.classList.add('whatsapp-mobile');
-mobileCta.querySelector('.alwan-mobile-actions').prepend(mobileWhatsapp);
 document.body.append(whatsapp);
+
+const mobileStart=document.createElement('a');
+mobileStart.className='alwan-mobile-start-float';
+mobileStart.href='customize.html';
+mobileStart.textContent='ابدأ تجربتك';
+mobileStart.setAttribute('aria-label','ابدأ تجربتك المجانية');
+document.body.append(mobileStart);
 
 const footer=document.createElement('footer');
 footer.className='alwan-footer';

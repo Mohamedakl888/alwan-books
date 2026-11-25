@@ -36,9 +36,9 @@ document.querySelector('form').onsubmit=async e=>{
  const kids=draft.kids?.length?draft.kids:[draft];
  const payload={
   customer:{
-   fullname:el('fullname').value.trim(),
+   fullname:document.querySelector('[name=fullname]').value.trim(),
    gender:document.querySelector('[name=gender]:checked')?.value||'',
-   mobile:digits,
+   mobile:'+'+el('prefix').value.replace(/\D/g,'')+digits,
    email:document.querySelector('input[type=email]').value.trim(),
    country:el('country').value
   },
@@ -59,7 +59,7 @@ document.querySelector('form').onsubmit=async e=>{
   const response=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const result=await response.json();
   if(!response.ok)throw Error(result.error||'تعذّر تسجيل الطلب');
-  el('paymentStatus').textContent='تم تسجيل الطلب بنجاح: '+result.id+' · لم يُخصم أي مبلغ ولم تُفعّل بوابة الدفع بعد.';
+  el('paymentStatus').textContent='تم تسجيل الطلب '+result.id+' بإجمالي '+amount(result.total)+' · لم يُخصم أي مبلغ.';
   button.textContent='تم تسجيل الطلب ✓';
  }catch(error){
   button.disabled=false;

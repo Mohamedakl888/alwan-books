@@ -6,14 +6,12 @@ Arabic RTL personalized coloring-book website. Built with static HTML, CSS and J
 
 ```sh
 npm install
-npm run dev
 ```
 
-Open http://localhost:8080 . No build step or package installation is required.
-Set an admin password and start the backend:
+Set an admin password and start the backend.
 
 ```sh
-set ADMIN_PASSWORD=your-strong-password
+export ADMIN_PASSWORD="your-strong-password"
 npm run dev
 ```
 
@@ -24,7 +22,8 @@ $env:ADMIN_PASSWORD="your-strong-password"
 npm run dev
 ```
 
-Open the orders dashboard at http://localhost:8080/admin and sign in with username `admin` and the configured password.
+Open http://localhost:8080 for the website, or http://localhost:8080/admin for the orders dashboard. Sign in with username `admin` and the configured password. Orders are stored in `data/orders.json`; customer photos are automatically removed after seven days.
+The frontend has no build step.
 
 To check local HTML files and asset references:
 
@@ -34,10 +33,10 @@ npm run validate
 
 ## Hosting
 
-Publish the `dist` directory. For Vercel, select Other with no build command and output directory `dist`.
+Publishing only the `dist` directory provides a static preview, not the backend or dashboard APIs. The complete app needs a Node.js host with persistent writable storage and the `ADMIN_PASSWORD` environment variable set. Use HTTPS and a strong secret in production. The JSON file store is intended for a single server; use a database before running multiple instances or handling production orders.
 
 ## Current scope
 
-Includes landing page, personalization form, image validation UI, local draft persistence, example preview, size selection and checkout interface. Payments, WhatsApp delivery and AI personalized book generation require backend integrations; sample preview illustrations are pre-generated examples.
+Includes the landing page, personalization form, image validation, local draft persistence, sample preview, package selection, order API, and admin dashboard. The backend validates package choices and calculates totals. Payment processing, WhatsApp/SMS delivery, and AI personalized book generation are not connected; sample preview illustrations are pre-generated examples. Trial requests are acknowledged but do not send a verification code.
 
-Do not commit API keys or customer data. Uploaded data is handled by the frontend; review storage and privacy behavior before production commerce.
+Do not commit API keys, the `data` directory, or customer data. Order details remain in the local JSON store until manually removed; uploaded customer photos are deleted automatically within seven days.

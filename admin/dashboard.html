@@ -45,7 +45,7 @@
       <div class="table-wrap">
         <table>
           <caption class="sr-only">الطلبات المسجلة</caption>
-          <thead><tr><th>رقم الطلب</th><th>العميل</th><th>الأطفال</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead>
+          <thead><tr><th>رقم الطلب</th><th>العميل</th><th>الأطفال</th><th>الإجمالي</th><th>الحالة</th><th>إشعار البريد</th><th>التاريخ</th><th></th></tr></thead>
           <tbody id="orders"></tbody>
         </table>
       </div>
@@ -55,6 +55,25 @@
     <button id="closeDialog" type="button" class="close" aria-label="إغلاق">×</button>
     <div id="orderDetails"></div>
   </dialog>
+  <template id="storyTools">
+    <section class="story-tools" aria-label="أدوات القصة">
+      <h4>أدوات توليد القصة</h4>
+      <label>نوع القصة
+        <select class="story-theme">
+          <option value="adventure">مغامرة</option>
+          <option value="friendship">صداقة وتعاون</option>
+          <option value="discovery">اكتشاف وتعلّم</option>
+        </select>
+      </label>
+      <button class="generate-story" type="button">توليد القصة</button>
+      <textarea class="story-output" rows="8" placeholder="ستظهر القصة هنا ويمكنك تعديلها." aria-label="القصة المولّدة"></textarea>
+      <div class="story-actions">
+        <button class="save-story" type="button" disabled>حفظ القصة</button>
+        <button class="copy-story" type="button" disabled>نسخ القصة</button>
+        <button class="download-story" type="button" disabled>تنزيل القصة</button>
+      </div>
+    </section>
+  </template>
   <script src="dashboard.js"></script>
 </body>
 </html>

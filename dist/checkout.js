@@ -16,7 +16,7 @@ children.forEach((child,index)=>{
 if(order.discount)line(el('items'),'خصم الكتاب الثاني (20%)','− '+amount(order.discount));
 line(el('items'),deliveryText,fast?amount(order.delivery):'مجانًا');
 el('total').textContent=amount(order.total);
-el('pay').textContent='ادفع الآن '+amount(order.total);
+el('pay').textContent='إتمام الطلب · '+amount(order.total);
 el('package').textContent=sizes.map((size,i)=>(children.length>1?name(i)+' · ':'')+size+' صفحة').join('، ')+' · نسخة رقمية · '+deliveryText;
 el('eta').textContent=fast?'التسليم خلال ساعتين':'التسليم خلال 24 ساعة';
 document.querySelector('.add').hidden=children.length>=2;
@@ -40,7 +40,8 @@ document.querySelector('form').onsubmit=async e=>{
    gender:document.querySelector('[name=gender]:checked')?.value||'',
    mobile:'+'+el('prefix').value.replace(/\D/g,'')+digits,
    email:document.querySelector('input[type=email]').value.trim(),
-   country:el('country').value
+   country:el('country').value,
+   whatsappOptIn:el('whatsappOptIn').checked
   },
   children:kids.map(k=>({
    name:k.child||'',
@@ -59,7 +60,18 @@ document.querySelector('form').onsubmit=async e=>{
   const response=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const result=await response.json();
   if(!response.ok)throw Error(result.error||'تعذّر تسجيل الطلب');
-  el('paymentStatus').textContent='تم تسجيل الطلب '+result.id+' بإجمالي '+amount(result.total)+' · لم يُخصم أي مبلغ.';
+  const message='تم تسجيل الطلب '+result.id+' بإجمالي '+amount(result.total)+
+   (result.notificationStatus==='sent'?' · تم إرسال إشعار الطلب إلى الإدارة.':' · تم حفظ الطلب ويمكن مراجعة إشعار البريد من لوحة الإدارة.')+
+   (result.whatsappNotificationStatus==='sent'?' تم إرسال تحديث واتساب.':'');
+  if(result.paymentStatus==='pending'&&result.paymentUrl){
+   el('paymentStatus').textContent='تم حفظ الطلب. جارٍ تحويلك إلى بوابة الدفع الآمنة…';
+   location.assign(result.paymentUrl);
+   return;
+  }
+  el('paymentStatus').textContent=message+
+   (result.paymentStatus==='paid'?' · تم تأكيد الدفع.':
+    result.paymentStatus==='failed'?' · تعذّر إنشاء عملية الدفع؛ تواصل معنا لإكمال الدفع.':
+    ' · الدفع الإلكتروني غير مفعّل؛ لم يتم خصم أي مبلغ.');
   button.textContent='تم تسجيل الطلب ✓';
  }catch(error){
   button.disabled=false;

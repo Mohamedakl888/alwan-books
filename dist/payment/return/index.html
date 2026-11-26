@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>حالة الدفع | ألوان</title>
+  <style>
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f7f3eb;color:#24302a;font-family:Tahoma,Arial,sans-serif}
+    main{width:min(90%,520px);box-sizing:border-box;padding:32px;border-radius:20px;background:#fff;box-shadow:0 12px 40px #24302a18;text-align:center}
+    h1{color:#34765f}
+    p{line-height:1.9}
+    button,a{display:inline-block;margin:8px;padding:12px 18px;border:0;border-radius:10px;background:#34765f;color:#fff;text-decoration:none;font:inherit;cursor:pointer}
+    button:disabled{opacity:.6;cursor:wait}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>حالة الدفع</h1>
+    <p id="status" role="status" aria-live="polite">جارٍ التحقق من حالة الدفع…</p>
+    <button id="refresh" type="button">التحقق مجددًا</button>
+    <a href="/">العودة إلى المتجر</a>
+  </main>
+  <script>
+    const statusText = document.querySelector("#status");
+    const refresh = document.querySelector("#refresh");
+    const parameters = new URLSearchParams(location.search);
+    const orderId = parameters.get("order_id");
+    const token = parameters.get("token");
+    const labels = {
+      not_paid: "لم يتم الدفع لهذا الطلب بعد.",
+      pending: "الدفع قيد المعالجة. تحقق مجددًا بعد قليل.",
+      paid: "تم تأكيد الدفع بنجاح. شكرًا لطلبك!",
+      failed: "لم يكتمل الدفع. يمكنك التواصل مع المتجر للمساعدة."
+    };
+
+    refresh.onclick = async () => {
+      if (!orderId || !token) {
+        statusText.textContent = "تعذّر التحقق من الطلب. ارجع إلى المتجر أو تواصل مع الإدارة.";
+        return;
+      }
+      refresh.disabled = true;
+      statusText.textContent = "جارٍ التحقق من حالة الدفع…";
+      try {
+        const response = await fetch(`/api/payments/${encodeURIComponent(orderId)}/status?token=${encodeURIComponent(token)}`, { cache: "no-store" });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "تعذّر التحقق من حالة الدفع.");
+        statusText.textContent = labels[result.status] || "حالة الدفع غير معروفة. تحقق مجددًا بعد قليل.";
+      } catch (error) {
+        statusText.textContent = error.message || "تعذّر الاتصال بالخادم. تحقق مجددًا بعد قليل.";
+      } finally {
+        refresh.disabled = false;
+      }
+    };
+
+    refresh.click();
+  </script>
+</body>
+</html>

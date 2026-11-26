@@ -36,7 +36,16 @@ th, td { padding: 12px; border-bottom: 1px solid #edf1ee; text-align: right; }
 th { color: #52615c; font-size: 13px; }
 tbody tr:last-child td { border-bottom: 0; }
 td select { max-width: 130px; padding: 7px; border: 1px solid #cad8d2; border-radius: 9px; background: white; }
+.notification-sent { color: var(--teal); }
+.notification-failed, .notification-not_configured { color: #9b3c31; }
 .view { padding: 7px 10px; background: var(--mint); color: var(--teal); }
+.story-tools { display: grid; gap: 8px; margin-top: 12px; padding: 12px; border-radius: 12px; background: var(--surface); }
+.story-tools h4 { margin: 0; color: var(--teal); }
+.story-tools label { display: grid; gap: 4px; }
+.story-tools select, .story-tools textarea { width: 100%; padding: 9px; border: 1px solid #cad8d2; border-radius: 9px; background: white; font: inherit; }
+.story-tools button, .resend-notification { padding: 8px 12px; background: var(--teal); color: white; }
+.story-actions { display: flex; gap: 8px; }
+.story-tools button:disabled { cursor: not-allowed; opacity: .6; }
 dialog { width: min(680px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); border: 0; border-radius: 20px; padding: 24px; }
 dialog::backdrop { background: #0f5c5c99; }
 .close { float: left; width: 36px; height: 36px; background: #edf4f1; }

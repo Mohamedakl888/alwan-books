@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node server.mjs",
     "start": "node server.mjs",
+    "worker": "node scripts/generation-worker.mjs",
     "validate": "node scripts/validate.mjs",
     "migrate:supabase": "node scripts/migrate-orders-to-supabase.mjs",
     "test": "node --test"
@@ -16,6 +17,7 @@
     "compression": "^1.8.2",
     "express": "^4.21.2",
     "nodemailer": "^10.6.1",
+    "pdf-lib": "^1.17.1",
     "sharp": "^0.35.5"
   },
   "devDependencies": {

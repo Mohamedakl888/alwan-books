@@ -12,17 +12,22 @@
     p{line-height:1.9}
     button,a{display:inline-block;margin:8px;padding:12px 18px;border:0;border-radius:10px;background:#34765f;color:#fff;text-decoration:none;font:inherit;cursor:pointer}
     button:disabled{opacity:.6;cursor:wait}
+    #generationStatus{color:#34765f;font-weight:bold}
   </style>
 </head>
 <body>
   <main>
     <h1>حالة الدفع</h1>
     <p id="status" role="status" aria-live="polite">جارٍ التحقق من حالة الدفع…</p>
+    <p id="generationStatus" role="status" aria-live="polite" hidden></p>
+    <a id="downloadBook" href="#" target="_blank" rel="noopener noreferrer" hidden>تنزيل كتاب PDF</a>
     <button id="refresh" type="button">التحقق مجددًا</button>
     <a href="/">العودة إلى المتجر</a>
   </main>
   <script>
     const statusText = document.querySelector("#status");
+    const generationStatus = document.querySelector("#generationStatus");
+    const downloadBook = document.querySelector("#downloadBook");
     const refresh = document.querySelector("#refresh");
     const parameters = new URLSearchParams(location.search);
     const orderId = parameters.get("order_id");
@@ -33,8 +38,21 @@
       paid: "تم تأكيد الدفع بنجاح. شكرًا لطلبك!",
       failed: "لم يكتمل الدفع. يمكنك التواصل مع المتجر للمساعدة."
     };
+    const generationLabels = {
+      not_started: "تم الدفع، وسيبدأ تجهيز الكتاب قريبًا.",
+      queued: "تم الدفع. كتابك في قائمة التجهيز.",
+      processing: "يجري تجهيز رسومات كتابك وملف PDF في الخلفية.",
+      needs_review: "صورة الطفل بانتظار مراجعة فريقنا قبل متابعة التوليد.",
+      failed: "تعذّر إكمال التوليد حتى الآن. سيتابع فريقنا معالجة الطلب.",
+      completed: "كتابك جاهز للتنزيل.",
+      content_deleted: "اكتمل الطلب، لكن ملفات التوليد حُذفت."
+    };
+    let pollTimer;
+    let automaticPolls = 0;
 
-    refresh.onclick = async () => {
+    const checkStatus = async (automatic = false) => {
+      clearTimeout(pollTimer);
+      if (!automatic) automaticPolls = 0;
       if (!orderId || !token) {
         statusText.textContent = "تعذّر التحقق من الطلب. ارجع إلى المتجر أو تواصل مع الإدارة.";
         return;
@@ -46,6 +64,20 @@
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "تعذّر التحقق من حالة الدفع.");
         statusText.textContent = labels[result.status] || "حالة الدفع غير معروفة. تحقق مجددًا بعد قليل.";
+        generationStatus.hidden = result.status !== "paid";
+        downloadBook.hidden = !result.bookPdfUrl;
+        let nextPollDelay = result.status === "pending" ? 15000 : 0;
+        if (result.status === "paid") {
+          generationStatus.textContent = generationLabels[result.generationStatus] || "جارٍ تجهيز حالة الطلب…";
+          if (result.bookPdfUrl) downloadBook.href = result.bookPdfUrl;
+          if (["not_started", "queued", "processing", "needs_review"].includes(result.generationStatus)) {
+            nextPollDelay = result.generationStatus === "needs_review" ? 30000 : 15000;
+          }
+        }
+        if (nextPollDelay && automaticPolls < 40) {
+          automaticPolls += 1;
+          pollTimer = setTimeout(() => checkStatus(true), nextPollDelay);
+        }
       } catch (error) {
         statusText.textContent = error.message || "تعذّر الاتصال بالخادم. تحقق مجددًا بعد قليل.";
       } finally {
@@ -53,7 +85,8 @@
       }
     };
 
-    refresh.click();
+    refresh.onclick = () => checkStatus();
+    checkStatus();
   </script>
 </body>
 </html>

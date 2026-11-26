@@ -8,6 +8,7 @@ const dashboardMessage = document.querySelector("#dashboardMessage");
 const refreshButton = document.querySelector("#refreshOrders");
 let credentials = "";
 let orders = [];
+let previewReviews = [];
 
 const statusNames = { new: "جديد", preparing: "قيد التحضير", ready: "جاهز", delivered: "تم التسليم", cancelled: "ملغي" };
 const notificationNames = { sent: "تم الإرسال", failed: "فشل الإرسال", not_configured: "البريد غير مضبوط", pending: "قيد الإرسال" };
@@ -91,13 +92,68 @@ async function loadOrders() {
   refreshButton.disabled = true;
   dashboardMessage.textContent = "جارٍ تحديث الطلبات…";
   try {
-    orders = await request("/api/orders");
+    [orders, previewReviews] = await Promise.all([
+      request("/api/orders"),
+      request("/api/admin/preview-reviews")
+    ]);
     render();
+    renderPreviewReviews();
     dashboardMessage.textContent = `تم تحديث الطلبات · ${orders.length} طلب`;
   } catch (error) {
     dashboardMessage.textContent = error.message === "INVALID" ? "انتهت جلسة الدخول. سجّل الدخول مجددًا." : error.message;
   } finally {
     refreshButton.disabled = false;
+  }
+}
+
+function renderPreviewReviews() {
+  const panel = document.querySelector("#previewReviews");
+  const list = document.querySelector("#previewReviewList");
+  list.replaceChildren();
+  panel.hidden = !previewReviews.length;
+  for (const preview of previewReviews) {
+    const card = document.createElement("article");
+    card.className = "preview-review-card";
+    const image = document.createElement("img");
+    image.src = preview.reviewPhotoUrl;
+    image.alt = `صورة ${preview.child?.name || "الطفل"} بانتظار المراجعة`;
+    const details = document.createElement("div");
+    const heading = document.createElement("h3");
+    heading.textContent = `معاينة ${preview.child?.name || "الطفل"}`;
+    const description = document.createElement("p");
+    description.textContent = `${preview.child?.gender || ""} · ${preview.child?.age || "—"} سنوات · ${preview.child?.interests || ""}`;
+    const actions = document.createElement("div");
+    actions.className = "preview-review-actions";
+    const photoLink = document.createElement("a");
+    photoLink.href = preview.reviewPhotoUrl;
+    photoLink.target = "_blank";
+    photoLink.rel = "noopener noreferrer";
+    photoLink.textContent = "عرض الصورة";
+    actions.append(photoLink);
+    for (const [decision, label] of [["approve", "موافقة"], ["reject", "رفض"]]) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.onclick = async () => {
+        if (decision === "reject" && !confirm("رفض الصورة سيوقف توليد هذه المعاينة. هل تريد المتابعة؟")) return;
+        button.disabled = true;
+        try {
+          await request(`/api/previews/${encodeURIComponent(preview.id)}/review`, {
+            method: "POST",
+            body: JSON.stringify({ decision })
+          });
+          dashboardMessage.textContent = decision === "approve" ? "تمت الموافقة على صورة المعاينة." : "تم رفض صورة المعاينة.";
+          await loadOrders();
+        } catch (error) {
+          dashboardMessage.textContent = error.message === "INVALID" ? "انتهت جلسة الدخول. سجّل الدخول مجددًا." : error.message;
+          button.disabled = false;
+        }
+      };
+      actions.append(button);
+    }
+    details.append(heading, description, actions);
+    card.append(image, details);
+    list.append(card);
   }
 }
 
@@ -410,12 +466,16 @@ loginForm.onsubmit = async event => {
   event.preventDefault();
   credentials = btoa(`admin:${password.value}`);
   try {
-    orders = await request("/api/orders");
+    [orders, previewReviews] = await Promise.all([
+      request("/api/orders"),
+      request("/api/admin/preview-reviews")
+    ]);
     login.hidden = true;
     view.hidden = false;
     logout.hidden = false;
     password.value = "";
     render();
+    renderPreviewReviews();
     dashboardMessage.textContent = `تم تحميل ${orders.length} طلب`;
   } catch (error) {
     credentials = "";
@@ -430,6 +490,7 @@ document.querySelector("#closeDialog").onclick = () => document.querySelector("#
 logout.onclick = () => {
   credentials = "";
   orders = [];
+  previewReviews = [];
   view.hidden = true;
   logout.hidden = true;
   login.hidden = false;

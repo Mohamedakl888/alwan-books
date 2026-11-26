@@ -11,7 +11,8 @@ const app = express();
 const port = Number(process.env.PORT || 8080);
 const root = process.cwd();
 const dist = path.join(root, "dist");
-const adminPassword = process.env.ADMIN_PASSWORD || "change-me";
+const adminPassword = process.env.ADMIN_PASSWORD || "";
+const adminPasswordConfigured = adminPassword.trim().length >= 16;
 const notificationEmail = process.env.ORDER_NOTIFICATION_EMAIL || "wdmohamed762@gmail.com";
 const photoBucket = process.env.SUPABASE_PHOTO_BUCKET || "child-photos";
 const generatedBucket = process.env.SUPABASE_GENERATED_BUCKET || "generated-books";
@@ -119,6 +120,7 @@ async function insertGenerationJobs(client, jobs) {
 }
 
 async function enqueueOrderGeneration(client, order) {
+  if (order.generation_status && order.generation_status !== "not_started") return;
   const children = order.children || [];
   if (!order.ai_processing_consent_at || children.some(child => !child.photoPath)) {
     const { error } = await client.from("orders").update({
@@ -503,16 +505,34 @@ function verifyTapWebhook(charge, receivedHash) {
 }
 
 function requireAdmin(req, res, next) {
+  if (!adminPasswordConfigured) {
+    return res.status(503).json({ error: "إدارة الموقع غير مهيأة. اضبط كلمة مرور قوية من 16 حرفًا على الأقل." });
+  }
   const header = req.get("authorization") || "";
   if (!header.startsWith("Basic ")) return res.status(401).set("WWW-Authenticate", 'Basic realm="Alwan Admin"').json({ error: "Authentication required" });
   const decoded = Buffer.from(header.slice(6), "base64").toString("utf8");
   const separator = decoded.indexOf(":");
+  const username = separator === -1 ? "" : decoded.slice(0, separator);
   const password = separator === -1 ? "" : decoded.slice(separator + 1);
-  if (password !== adminPassword) return res.status(401).set("WWW-Authenticate", 'Basic realm="Alwan Admin"').json({ error: "Invalid credentials" });
+  const supplied = Buffer.from(password);
+  const expected = Buffer.from(adminPassword);
+  const valid = username === "admin" &&
+    supplied.length === expected.length &&
+    crypto.timingSafeEqual(supplied, expected);
+  if (!valid) return res.status(401).set("WWW-Authenticate", 'Basic realm="Alwan Admin"').json({ error: "Invalid credentials" });
   next();
 }
 
 app.disable("x-powered-by");
+app.use((_req, res, next) => {
+  res.set({
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+  });
+  next();
+});
 app.use(express.json({ limit: "24mb" }));
 app.use(compression());
 app.use((error, _req, res, next) => {
@@ -588,7 +608,21 @@ app.get("/api/payments/:id/status", async (req, res) => {
     if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) {
       return res.status(404).json({ error: "Payment status not found" });
     }
-    res.json({ id: order.id, status: order.payment_status });
+    let bookPdfUrl = null;
+    if (order.payment_status === "paid" &&
+        order.generation_status === "completed" &&
+        order.book_pdf_path) {
+      const { data, error: signedUrlError } = await requireSupabase().storage.from(generatedBucket)
+        .createSignedUrl(order.book_pdf_path, 15 * 60);
+      if (signedUrlError) throw signedUrlError;
+      bookPdfUrl = data.signedUrl;
+    }
+    res.json({
+      id: order.id,
+      status: order.payment_status,
+      generationStatus: order.generation_status || "not_started",
+      bookPdfUrl
+    });
   } catch (error) {
     reportApiError(res, "Payment status lookup", error);
   }
@@ -738,16 +772,33 @@ app.delete("/api/previews/:id", async (req, res) => {
     if (error) throw error;
     if (!preview) return res.status(404).json({ error: "المعاينة غير موجودة" });
 
+    const { data: activeJobs, error: jobsError } = await client.from("generation_jobs")
+      .select("id")
+      .eq("preview_id", preview.id)
+      .eq("status", "processing");
+    if (jobsError) throw jobsError;
+    if (activeJobs.length) {
+      return res.status(409).json({ error: "انتظر انتهاء معالجة المعاينة قبل حذفها." });
+    }
+
+    const { data: relatedJobs, error: relatedJobsError } = await client.from("generation_jobs")
+      .select("result_path, payload")
+      .eq("preview_id", preview.id);
+    if (relatedJobsError) throw relatedJobsError;
     const imagePaths = [preview.source_image_path].filter(Boolean);
     const generatedPaths = (preview.generated_pages || [])
       .map(page => typeof page === "string" ? page : page.path)
       .filter(Boolean);
+    for (const job of relatedJobs) {
+      if (job.result_path) generatedPaths.push(job.result_path);
+      if (Array.isArray(job.payload?.generatedPaths)) generatedPaths.push(...job.payload.generatedPaths);
+    }
     if (imagePaths.length) {
       const { error: imageError } = await client.storage.from(photoBucket).remove(imagePaths);
       if (imageError) throw imageError;
     }
     if (generatedPaths.length) {
-      const { error: generatedError } = await client.storage.from(generatedBucket).remove(generatedPaths);
+      const { error: generatedError } = await client.storage.from(generatedBucket).remove([...new Set(generatedPaths)]);
       if (generatedError) throw generatedError;
     }
     const { error: deleteError } = await client.from("preview_sessions").delete().eq("id", preview.id);
@@ -755,6 +806,142 @@ app.delete("/api/previews/:id", async (req, res) => {
     res.json({ id: preview.id, deleted: true });
   } catch (error) {
     reportApiError(res, "Preview deletion", error);
+  }
+});
+
+app.post("/api/previews/:id/retry", async (req, res) => {
+  const resumeToken = req.get("X-Preview-Token") || "";
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(req.params.id) ||
+      !/^[a-f0-9]{64}$/i.test(resumeToken)) {
+    return res.status(404).json({ error: "المعاينة غير موجودة" });
+  }
+  try {
+    const client = requireSupabase();
+    const tokenHash = crypto.createHash("sha256").update(resumeToken).digest("hex");
+    const { data: preview, error: previewError } = await client.from("preview_sessions")
+      .select("id, status")
+      .eq("id", req.params.id)
+      .eq("resume_token_hash", tokenHash)
+      .maybeSingle();
+    if (previewError) throw previewError;
+    if (!preview) return res.status(404).json({ error: "المعاينة غير موجودة" });
+    if (preview.status !== "failed") {
+      return res.status(409).json({ error: "لا توجد معاينة فاشلة لإعادة المحاولة." });
+    }
+
+    const { data: jobs, error: retryError } = await client.from("generation_jobs")
+      .update({
+        status: "queued",
+        attempts: 0,
+        available_at: new Date().toISOString(),
+        last_error: null,
+        started_at: null,
+        finished_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq("preview_id", preview.id)
+      .eq("status", "failed")
+      .select("id");
+    if (retryError) throw retryError;
+    if (!jobs.length) return res.status(409).json({ error: "لا توجد مهام فاشلة لإعادة المحاولة." });
+
+    const { error: updateError } = await client.from("preview_sessions").update({
+      status: "queued",
+      last_error: null,
+      updated_at: new Date().toISOString()
+    }).eq("id", preview.id);
+    if (updateError) throw updateError;
+    res.json({ id: preview.id, retried: jobs.length, status: "queued" });
+  } catch (error) {
+    reportApiError(res, "Preview retry", error);
+  }
+});
+
+app.get("/api/admin/preview-reviews", requireAdmin, async (_req, res) => {
+  try {
+    const client = requireSupabase();
+    const { data: previews, error } = await client.from("preview_sessions")
+      .select("id, child_data, source_image_path, created_at")
+      .eq("status", "needs_review")
+      .order("created_at");
+    if (error) throw error;
+    const items = await Promise.all(previews.map(async preview => {
+      const { data: job, error: jobError } = await client.from("generation_jobs")
+        .select("id, status, last_error")
+        .eq("preview_id", preview.id)
+        .eq("job_type", "photo_review")
+        .eq("status", "needs_review")
+        .maybeSingle();
+      if (jobError) throw jobError;
+      if (!job) return null;
+      const { data: signed, error: signedError } = await client.storage.from(photoBucket)
+        .createSignedUrl(preview.source_image_path, 60 * 60);
+      if (signedError) throw signedError;
+      return {
+        id: preview.id,
+        jobId: job.id,
+        child: preview.child_data,
+        createdAt: preview.created_at,
+        reviewPhotoUrl: signed.signedUrl
+      };
+    }));
+    res.json(items.filter(Boolean));
+  } catch (error) {
+    reportApiError(res, "Preview review listing", error);
+  }
+});
+
+app.post("/api/previews/:id/review", requireAdmin, async (req, res) => {
+  const decision = cleanText(req.body?.decision, 20);
+  if (!["approve", "reject"].includes(decision)) {
+    return res.status(400).json({ error: "قرار مراجعة الصورة غير صحيح" });
+  }
+  try {
+    const client = requireSupabase();
+    const { data: preview, error: previewError } = await client.from("preview_sessions")
+      .select("id, status")
+      .eq("id", req.params.id)
+      .maybeSingle();
+    if (previewError) throw previewError;
+    if (!preview) return res.status(404).json({ error: "المعاينة غير موجودة" });
+    const { data: job, error: jobError } = await client.from("generation_jobs")
+      .select("id, status")
+      .eq("preview_id", preview.id)
+      .eq("job_type", "photo_review")
+      .eq("status", "needs_review")
+      .maybeSingle();
+    if (jobError) throw jobError;
+    if (!job) return res.status(409).json({ error: "الصورة ليست بانتظار المراجعة." });
+
+    const rejected = decision === "reject";
+    const { data: updated, error: updateError } = await client.from("generation_jobs").update({
+      status: rejected ? "cancelled" : "completed",
+      last_error: rejected ? "photo_rejected_by_admin" : null,
+      finished_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).eq("id", job.id).eq("status", "needs_review").select("id").maybeSingle();
+    if (updateError) throw updateError;
+    if (!updated) return res.status(409).json({ error: "تمت مراجعة الصورة مسبقًا." });
+
+    if (rejected) {
+      const { error: cancelError } = await client.from("generation_jobs").update({
+        status: "cancelled",
+        last_error: "cancelled_after_photo_rejection",
+        finished_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }).eq("preview_id", preview.id).eq("status", "queued");
+      if (cancelError) throw cancelError;
+    }
+    const nextStatus = rejected ? "cancelled" : "queued";
+    const { error: statusError } = await client.from("preview_sessions").update({
+      status: nextStatus,
+      last_error: rejected ? "photo_rejected_by_admin" : null,
+      updated_at: new Date().toISOString()
+    }).eq("id", preview.id);
+    if (statusError) throw statusError;
+    res.json({ id: preview.id, status: nextStatus });
+  } catch (error) {
+    reportApiError(res, "Preview photo review", error);
   }
 });
 
@@ -1031,6 +1218,7 @@ app.post("/api/orders/:id/generation/retry", requireAdmin, async (req, res) => {
       .update({
         status: "queued",
         attempts: 0,
+        available_at: new Date().toISOString(),
         last_error: null,
         started_at: null,
         finished_at: null,
@@ -1070,12 +1258,13 @@ app.delete("/api/orders/:id/content", requireAdmin, async (req, res) => {
 
     const sourcePaths = (order.children || []).map(child => child.photoPath).filter(Boolean);
     const { data: allJobs, error: allJobsError } = await client.from("generation_jobs")
-      .select("id, result_path")
+      .select("id, result_path, payload")
       .eq("order_id", order.id);
     if (allJobsError) throw allJobsError;
     const generatedPaths = [
       order.book_pdf_path,
-      ...allJobs.map(job => job.result_path)
+      ...allJobs.map(job => job.result_path),
+      ...allJobs.flatMap(job => Array.isArray(job.payload?.generatedPaths) ? job.payload.generatedPaths : [])
     ].filter(Boolean);
     if (sourcePaths.length) {
       const { error } = await client.storage.from(photoBucket).remove(sourcePaths);
@@ -1098,10 +1287,17 @@ app.delete("/api/orders/:id/content", requireAdmin, async (req, res) => {
     }).eq("id", order.id);
     if (updateError) throw updateError;
 
-    const { error: jobsUpdateError } = await client.from("generation_jobs")
-      .update({ result_path: null, source_image_path: null, updated_at: new Date().toISOString() })
-      .eq("order_id", order.id);
-    if (jobsUpdateError) throw jobsUpdateError;
+    for (const job of allJobs) {
+      const { error: jobsUpdateError } = await client.from("generation_jobs")
+        .update({
+          result_path: null,
+          source_image_path: null,
+          payload: { ...(job.payload || {}), generatedPaths: [] },
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", job.id);
+      if (jobsUpdateError) throw jobsUpdateError;
+    }
     res.json({ id: order.id, deleted: true, sourcePhotos: sourcePaths.length, generatedFiles: generatedPaths.length });
   } catch (error) {
     reportApiError(res, "Order content deletion", error);
@@ -1263,6 +1459,10 @@ app.get(["/", "/index.html"], (_req, res) => {
   res.type("html").send(enhancedHomepage);
 });
 
+app.use("/control", (_req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
 app.use("/control", express.static(path.join(root, "admin")));
 app.get("/control", (_req, res) => res.redirect("/control/dashboard.html"));
 app.use("/admin", (req, res) => {
@@ -1274,5 +1474,5 @@ app.get("*", (_req, res) => res.sendFile(path.join(dist, "index.html")));
 
 app.listen(port, () => {
   console.log(`Alwan Books running at http://localhost:${port}`);
-  if (adminPassword === "change-me") console.warn("Warning: set ADMIN_PASSWORD before exposing the admin dashboard.");
+  if (!adminPasswordConfigured) console.warn("Warning: set ADMIN_PASSWORD to at least 16 characters before using the admin dashboard.");
 });

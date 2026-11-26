@@ -7,15 +7,19 @@
     "dev": "node server.mjs",
     "start": "node server.mjs",
     "validate": "node scripts/validate.mjs",
-    "migrate:supabase": "node scripts/migrate-orders-to-supabase.mjs"
+    "migrate:supabase": "node scripts/migrate-orders-to-supabase.mjs",
+    "test": "node --test"
   },
   "dependencies": {
+    "@supabase/server": "1.4.1",
     "@supabase/supabase-js": "^2.0.0",
     "compression": "^1.8.2",
     "express": "^4.21.2",
-    "nodemailer": "^10.6.1"
+    "nodemailer": "^10.6.1",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "serve": "^14.2.4"
+    "serve": "^14.2.4",
+    "supabase": "^3.4.0"
   }
 }

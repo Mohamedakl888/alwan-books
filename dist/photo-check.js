@@ -68,7 +68,7 @@ function bindPhotoUpload(el,k,commit){
  async function examine(src,expected){
   const img=new Image();img.src=src;await img.decode();
   if(expected!==version)return;
-  const ratio=Math.min(1,720/Math.max(img.width,img.height));
+  const ratio=Math.min(1,1600/Math.max(img.width,img.height));
   const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*ratio));canvas.height=Math.max(1,Math.round(img.height*ratio));
   const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
   const preview=canvas.toDataURL('image/jpeg',0.83);displayPhoto(preview);
@@ -85,6 +85,9 @@ function bindPhotoUpload(el,k,commit){
   k.photo='';k.photoChecked=0;displayPhoto('');state('busy');commit();
   if(blob && !['image/jpeg','image/png'].includes(blob.type)){
    state('rejected','اختر ملف JPG أو PNG.');return;
+  }
+  if(blob && blob.size>12*1024*1024){
+   state('rejected','حجم الصورة كبير جدًا. اختر صورة أقل من 12 ميجابايت.');return;
   }
   const src=oldSrc||URL.createObjectURL(blob);
   try{await examine(src,expected)}

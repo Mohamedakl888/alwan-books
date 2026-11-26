@@ -19,16 +19,14 @@ if (!apply) {
 }
 
 const url = process.env.SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !serviceRoleKey) {
-  throw new Error("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY before applying the migration.");
+const serverKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!url || !serverKey) {
+  throw new Error("Set SUPABASE_URL and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY) before applying the migration.");
 }
 
-const supabase = createClient(url, serviceRoleKey, {
+const supabase = createClient(url, serverKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
-const photoRetentionMs = 7 * 24 * 60 * 60 * 1000;
-
 function decodePhoto(value) {
   const match = /^data:image\/(jpeg|png);base64,([A-Za-z0-9+/]+={0,2})$/i.exec(value);
   if (!match) throw new Error("An order contains an invalid child photo data URL.");
@@ -43,7 +41,6 @@ function decodePhoto(value) {
 
 async function migrateOrder(order) {
   const createdAt = order.createdAt || new Date().toISOString();
-  const isExpired = Date.now() - Date.parse(createdAt) >= photoRetentionMs;
   const safeId = order.id.replace(/[^A-Za-z0-9_-]/g, "_");
   const children = [];
 
@@ -52,13 +49,13 @@ async function migrateOrder(order) {
     const photo = child.photo;
     delete child.photo;
 
-    if (child.photoPath && !isExpired) {
+    if (child.photoPath) {
       children.push(child);
       continue;
     }
 
     delete child.photoPath;
-    if (typeof photo === "string" && photo.startsWith("data:image/") && !isExpired) {
+    if (typeof photo === "string" && photo.startsWith("data:image/")) {
       const image = decodePhoto(photo);
       const photoPath = `${safeId}/${index}-legacy.${image.extension}`;
       const { error } = await supabase.storage.from(bucket).upload(photoPath, image.buffer, {

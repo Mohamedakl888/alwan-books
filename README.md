@@ -27,14 +27,27 @@ The frontend has no build step.
 
 ## Database and backend setup
 
-The backend uses Supabase PostgreSQL and a private Supabase Storage bucket for child photos. Create a Supabase project, run `supabase/migrations/20261126000000_initial_schema.sql` in its SQL Editor, then configure these server environment variables in Hostinger:
+The backend uses Supabase PostgreSQL and a private Supabase Storage bucket for child photos. The Supabase CLI is configured in `supabase/config.jsonc`. To apply database migrations from a terminal, authenticate and link the project, then push the migration:
+
+```sh
+npx supabase login
+npx supabase link --project-ref <project-ref>
+npx supabase db push
+```
+
+`supabase link` may prompt for the database password; enter it only in the local terminal, never in chat or source files. Alternatively, run `supabase/migrations/20261126020448_initial_schema.sql` and the later migration files in `supabase/migrations/` in the Supabase SQL Editor. After applying the schema, configure these server environment variables in Hostinger:
 
 - `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY` (server only; never put this in browser code)
+- `SUPABASE_SECRET_KEY` (server only; alternatively, legacy `SUPABASE_SERVICE_ROLE_KEY`; never put either in browser code)
 - `SUPABASE_PHOTO_BUCKET` (optional; defaults to `child-photos`)
+- `SUPABASE_GENERATED_BUCKET` (optional; defaults to `generated-books`)
 - `ADMIN_PASSWORD`
 
-Without the Supabase URL and service-role key, order APIs return HTTP 503 rather than silently writing to local JSON. The local `data/orders.json` file is not changed by the migration tool. To inspect its order count first, run `npm run migrate:supabase`; after applying the SQL and configuring the environment, run `npm run migrate:supabase -- --apply` to idempotently import existing orders and unexpired photos. It keeps the local JSON file unchanged. Photos in the private bucket are removed after seven days.
+Without the Supabase URL and server secret key, order APIs return HTTP 503 rather than silently writing to local JSON. The local `data/orders.json` file is not changed by the migration tool. To inspect its order count first, run `npm run migrate:supabase`; after applying the SQL and configuring the environment, run `npm run migrate:supabase -- --apply` to idempotently import existing orders and photos. It keeps the local JSON file unchanged.
+
+Child photos are normalized server-side to JPEG, resized to at most 1600 px, and compressed below 4 MB before upload to the private bucket. They and generated files are retained until an administrator or the preview owner deletes them; there is no automatic expiration. Parents must consent before an image is sent to OpenAI for review and illustration generation. The browser also checks for a single clear, front-facing face before checkout. Keep private-bucket access server-side and use the dashboard or the preview's deletion control to remove stored content.
+
+The database has `preview_sessions`, `generation_jobs`, and `generation_job_dependencies` tables plus a private `generated-books` bucket. A free-preview request stores a resumable token and queues a photo-review job followed by two preview pages. After verified payment, the backend queues photo-review, illustration, and PDF-assembly jobs; the dashboard shows status and can retry failed jobs. **The generation worker and OpenAI calls are intentionally not running yet**, so jobs remain queued and no personalized preview/PDF is produced until the worker is implemented and deployed. Set `OPENAI_API_KEY` only in Hostinger for that later worker; never add it to browser code or this repository.
 
 To email order notifications to `wdmohamed762@gmail.com`, configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, and `SMTP_PASS`; optionally set `SMTP_FROM`, `SMTP_SECURE`, and `ORDER_NOTIFICATION_EMAIL`. For Gmail SMTP, use host `smtp.gmail.com`, port `465`, `SMTP_SECURE=true`, and a Google app password as `SMTP_PASS` (not your account password). Failed or unconfigured notifications are shown in the dashboard and can be retried from order details.
 
@@ -60,6 +73,6 @@ Deploy the Node.js project root as a Node.js app on Hostinger and set the variab
 
 ## Current scope
 
-Includes the landing page, personalization form, image validation, local draft persistence, sample preview, package selection, Supabase-backed order API and admin dashboard, private photo storage, saved story templates, TAP hosted payments, and opt-in Meta WhatsApp order updates. Provider features remain inactive until their server-side credentials and approved Meta template are configured. Sample preview illustrations are pre-generated examples. Trial requests are stored, but no verification code is sent.
+Includes the landing page, personalization form, local face screening, server-side image normalization/compression, resumable preview/job records, package selection, Supabase-backed order API and admin dashboard, private photo and generated-file storage, saved story templates, TAP hosted payments, and opt-in Meta WhatsApp order updates. Personalized AI generation and PDF assembly are not active until a background worker is deployed. TAP, Meta, and SMTP also require their server-side credentials and approved Meta template. The non-personalized sample illustrations remain pre-generated examples. Trial requests are stored, but no verification code is sent.
 
-Do not commit API keys, the `data` directory, or customer data. The local JSON file is kept unchanged as a migration source/backup; runtime order APIs use Supabase. Uploaded customer photos in the private bucket are deleted after seven days.
+Do not commit API keys, the `data` directory, or customer data. The local JSON file is kept unchanged as a migration source/backup; runtime order APIs use Supabase. Child photos and generated content remain in private storage until manually deleted.

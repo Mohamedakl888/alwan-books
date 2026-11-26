@@ -13,6 +13,9 @@ const statusNames = { new: "جديد", preparing: "قيد التحضير", ready
 const notificationNames = { sent: "تم الإرسال", failed: "فشل الإرسال", not_configured: "البريد غير مضبوط", pending: "قيد الإرسال" };
 const whatsappNotificationNames = { sent: "تم الإرسال", failed: "فشل الإرسال", not_configured: "واتساب غير مضبوط", not_opted_in: "لم يوافق العميل", pending: "قيد الإرسال" };
 const paymentStatusNames = { not_paid: "غير مدفوع", pending: "قيد الدفع", paid: "مدفوع", failed: "فشل الدفع", refunded: "مسترد", not_configured: "الدفع غير مضبوط" };
+const generationStatusNames = { not_started: "لم يبدأ", queued: "في قائمة الانتظار", processing: "قيد التوليد", needs_review: "بانتظار مراجعة الصورة", failed: "فشل التوليد", completed: "اكتمل", content_deleted: "حُذفت الملفات يدويًا" };
+const generationJobNames = { photo_review: "فحص الصورة", preview_pages: "صفحتا المعاينة", book_illustrations: "رسومات الكتاب", pdf_assembly: "تجميع PDF" };
+const generationJobStatusNames = { queued: "في قائمة الانتظار", processing: "قيد التنفيذ", needs_review: "مراجعة مطلوبة", failed: "فشل", completed: "اكتمل", cancelled: "ملغي" };
 
 async function request(url, options = {}) {
   const response = await fetch(url, { ...options, headers: { "Authorization": `Basic ${credentials}`, "Content-Type": "application/json", ...(options.headers || {}) } });
@@ -101,9 +104,13 @@ async function loadOrders() {
 async function showOrder(order) {
   let full = order;
   let savedStories = [];
+  let generationJobs = [];
   try {
-    full = await request(`/api/orders/${encodeURIComponent(order.id)}`);
-    savedStories = await request(`/api/orders/${encodeURIComponent(order.id)}/stories`);
+    [full, savedStories, generationJobs] = await Promise.all([
+      request(`/api/orders/${encodeURIComponent(order.id)}`),
+      request(`/api/orders/${encodeURIComponent(order.id)}/stories`),
+      request(`/api/orders/${encodeURIComponent(order.id)}/generation-jobs`)
+    ]);
   } catch (error) {
     dashboardMessage.textContent = error.message === "INVALID" ? "انتهت جلسة الدخول. سجّل الدخول مجددًا." : error.message;
     return;
@@ -200,7 +207,57 @@ async function showOrder(order) {
     grid.append(card);
   });
   const packageDetails = document.createElement("p");
-  packageDetails.textContent = `الحالة: ${statusNames[full.status] || "غير معروفة"} · الإجمالي: ${Number(full.total).toLocaleString("ar-EG")} ج.م. · الدفع: ${paymentStatusNames[full.paymentStatus] || full.paymentStatus}`;
+  packageDetails.textContent = `الحالة: ${statusNames[full.status] || "غير معروفة"} · الإجمالي: ${Number(full.total).toLocaleString("ar-EG")} ج.م. · الدفع: ${paymentStatusNames[full.paymentStatus] || full.paymentStatus} · التوليد: ${generationStatusNames[full.generationStatus] || full.generationStatus}`;
+  const generationPanel = document.createElement("section");
+  generationPanel.className = "story-tools";
+  const generationHeading = document.createElement("h3");
+  generationHeading.textContent = "مهام فحص الصور وتوليد الكتاب";
+  const generationList = document.createElement("ul");
+  for (const job of generationJobs) {
+    const item = document.createElement("li");
+    const attemptText = ` · المحاولات ${job.attempts}/${job.max_attempts}`;
+    const label = document.createElement("span");
+    label.textContent = `${generationJobNames[job.job_type] || job.job_type}: ${generationJobStatusNames[job.status] || job.status}${attemptText}`;
+    item.append(label);
+    if (job.last_error) item.title = job.last_error;
+    if (job.status === "needs_review" && job.reviewPhotoUrl) {
+      const photoLink = document.createElement("a");
+      photoLink.href = job.reviewPhotoUrl;
+      photoLink.target = "_blank";
+      photoLink.rel = "noopener noreferrer";
+      photoLink.textContent = "عرض الصورة";
+      const reviewDecision = async decision => {
+        if (decision === "reject" && !confirm("رفض الصورة سيوقف توليد هذا الكتاب. هل تريد المتابعة؟")) return;
+        try {
+          await request(`/api/orders/${encodeURIComponent(full.id)}/generation-jobs/${encodeURIComponent(job.id)}/review`, {
+            method: "POST",
+            body: JSON.stringify({ decision })
+          });
+          dashboardMessage.textContent = decision === "approve" ? "تمت الموافقة على الصورة." : "تم رفض الصورة وإيقاف التوليد.";
+          await showOrder(full);
+          await loadOrders();
+        } catch (error) {
+          dashboardMessage.textContent = error.message === "INVALID" ? "انتهت جلسة الدخول. سجّل الدخول مجددًا." : error.message;
+        }
+      };
+      const approveButton = document.createElement("button");
+      approveButton.type = "button";
+      approveButton.textContent = "موافقة";
+      approveButton.onclick = () => reviewDecision("approve");
+      const rejectButton = document.createElement("button");
+      rejectButton.type = "button";
+      rejectButton.textContent = "رفض";
+      rejectButton.onclick = () => reviewDecision("reject");
+      item.append(document.createTextNode(" · "), photoLink, document.createTextNode(" · "), approveButton, rejectButton);
+    }
+    generationList.append(item);
+  }
+  if (!generationJobs.length) {
+    const item = document.createElement("li");
+    item.textContent = "لا توجد مهام توليد بعد؛ يبدأ التوليد بعد تأكيد الدفع.";
+    generationList.append(item);
+  }
+  generationPanel.append(generationHeading, generationList);
   const emailStatus = document.createElement("p");
   const notificationStatus = full.emailNotification?.status || "not_configured";
   emailStatus.textContent = `إشعار البريد: ${notificationNames[notificationStatus] || notificationStatus}`;
@@ -208,6 +265,14 @@ async function showOrder(order) {
   const whatsappNotificationStatus = full.whatsappNotification?.status || "not_configured";
   whatsappStatus.textContent = `إشعار واتساب: ${whatsappNotificationNames[whatsappNotificationStatus] || whatsappNotificationStatus}`;
   const paymentElements = [];
+  if (full.bookPdfUrl) {
+    const pdfLink = document.createElement("a");
+    pdfLink.href = full.bookPdfUrl;
+    pdfLink.target = "_blank";
+    pdfLink.rel = "noopener noreferrer";
+    pdfLink.textContent = "تنزيل كتاب PDF";
+    paymentElements.push(pdfLink);
+  }
   if (full.paymentUrl) {
     const paymentLink = document.createElement("a");
     paymentLink.href = full.paymentUrl;
@@ -233,6 +298,44 @@ async function showOrder(order) {
       } catch (error) {
         dashboardMessage.textContent = error.message === "INVALID" ? "انتهت جلسة الدخول. سجّل الدخول مجددًا." : error.message;
         retryPaymentButton.disabled = false;
+      }
+      if (generationJobs.some(job => job.status === "failed")) {
+        const retryGenerationButton = document.createElement("button");
+        retryGenerationButton.type = "button";
+        retryGenerationButton.className = "resend-notification";
+        retryGenerationButton.textContent = "إعادة محاولة مهام التوليد الفاشلة";
+        retryGenerationButton.onclick = async () => {
+          retryGenerationButton.disabled = true;
+          try {
+            const result = await request(`/api/orders/${encodeURIComponent(full.id)}/generation/retry`, { method: "POST" });
+            dashboardMessage.textContent = `أُعيدت ${result.retried} مهمة إلى قائمة الانتظار.`;
+            await showOrder(full);
+          } catch (error) {
+            dashboardMessage.textContent = error.message === "INVALID" ? "انتهت جلسة الدخول. سجّل الدخول مجددًا." : error.message;
+            retryGenerationButton.disabled = false;
+          }
+        };
+        paymentElements.push(retryGenerationButton);
+      }
+      if (full.children.some(child => child.photo) || full.bookPdfUrl) {
+        const deleteContentButton = document.createElement("button");
+        deleteContentButton.type = "button";
+        deleteContentButton.className = "resend-notification";
+        deleteContentButton.textContent = "حذف صور الطفل والملفات المولدة نهائيًا";
+        deleteContentButton.onclick = async () => {
+          if (!confirm("سيتم حذف صور الأطفال ورسومات الكتاب وملف PDF نهائيًا. هل تريد المتابعة؟")) return;
+          deleteContentButton.disabled = true;
+          try {
+            await request(`/api/orders/${encodeURIComponent(full.id)}/content`, { method: "DELETE" });
+            dashboardMessage.textContent = "تم حذف صور الطلب وملفاته نهائيًا.";
+            await showOrder(full);
+            await loadOrders();
+          } catch (error) {
+            dashboardMessage.textContent = error.message === "INVALID" ? "انتهت جلسة الدخول. سجّل الدخول مجددًا." : error.message;
+            deleteContentButton.disabled = false;
+          }
+        };
+        paymentElements.push(deleteContentButton);
       }
     };
     paymentElements.push(retryPaymentButton);
@@ -273,7 +376,7 @@ async function showOrder(order) {
       resendWhatsappButton.disabled = false;
     }
   };
-  document.querySelector("#orderDetails").append(heading, customer, grid, packageDetails, ...paymentElements, emailStatus, resendButton, whatsappStatus, resendWhatsappButton);
+  document.querySelector("#orderDetails").append(heading, customer, grid, packageDetails, generationPanel, ...paymentElements, emailStatus, resendButton, whatsappStatus, resendWhatsappButton);
   if (!dialog.open) dialog.showModal();
 }
 

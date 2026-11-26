@@ -41,7 +41,8 @@ document.querySelector('form').onsubmit=async e=>{
    mobile:'+'+el('prefix').value.replace(/\D/g,'')+digits,
    email:document.querySelector('input[type=email]').value.trim(),
    country:el('country').value,
-   whatsappOptIn:el('whatsappOptIn').checked
+   whatsappOptIn:el('whatsappOptIn').checked,
+   aiProcessingConsent:el('aiProcessingConsent').checked
   },
   children:kids.map(k=>({
    name:k.child||'',

@@ -119,31 +119,67 @@ const preparation=document.getElementById('prep');
 const intro=trialSheet.querySelector('.trial-intro');
 let preparedKey='',run=0;
 function draftKey(){return JSON.stringify([kids[0].child,kids[0].extra,kids[0].photo])}
+async function previewFingerprint(value){
+ const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));
+ return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
+}
+const resumePreview=document.getElementById('resume-preview');
+const viewPages=document.getElementById('view-pages');
+function previewUrl(preview){return `preview.html#preview_id=${encodeURIComponent(preview.id)}&token=${encodeURIComponent(preview.token)}`}
+function updateResumePreview(){
+ try{
+ const saved=JSON.parse(localStorage.getItem('alwan-preview')||'null');
+ if(saved?.id&&saved?.token){resumePreview.href=previewUrl(saved);resumePreview.hidden=false}
+ }catch{}
+}
+updateResumePreview();
 function showTrialStep(){
  const show=preparedKey===draftKey();
  preparation.hidden=!show;intro.hidden=show;contact.hidden=show;
 }
 async function preparePages(){
- const task=++run;preparedKey=draftKey();showTrialStep();
+ const task=++run,key=draftKey();preparedKey=key;showTrialStep();
  const name=kids[0].child.trim(),rows=[...preparation.querySelectorAll('li')];
  const title=document.getElementById('prep-title'),status=document.getElementById('prep-status');
- const view=document.getElementById('view-pages'),retry=document.getElementById('retry-pages');
+ const view=viewPages,retry=document.getElementById('retry-pages');
  title.textContent='نجهّز تجربتك المجانية لكتاب '+name+' ❤️';
  view.hidden=retry.hidden=true;
- function progress(n){
-  rows.forEach((row,i)=>{row.dataset.state=i<n?'done':i===n?'busy':'waiting';row.querySelector('small').textContent=i<n?'✓ اكتمل':i===n?'جارٍ الآن':'لم يبدأ'});
+ if(!document.getElementById('aiProcessingConsent').checked){
+ contact.querySelector('.trial-message').textContent='يلزم إقرار ولي الأمر بالموافقة قبل معالجة الصورة.';
+ preparation.hidden=true;intro.hidden=false;contact.hidden=false;return;
  }
+ if(!kids[0].photo||kids[0].photoChecked!==1){
+ contact.querySelector('.trial-message').textContent='أكمل فحص صورة الطفل أولًا.';
+ preparation.hidden=true;intro.hidden=false;contact.hidden=false;return;
+ }
+ rows.forEach(row=>{row.dataset.state='waiting';row.querySelector('small').textContent='في قائمة الانتظار'});
+ status.textContent='جارٍ حفظ المعاينة والصورة المضغوطة بأمان…';
  try{
-  progress(0);status.textContent='نختار الصفحتين…';
-  const paths=chooseSamplePages(kids[0].extra);
-  await new Promise(resolve=>requestAnimationFrame(resolve));
-  if(task!==run)return;
-  progress(1);status.textContent='جارٍ تجهيز الصور…';
-  const images=await Promise.all(paths.map(async path=>{const img=new Image();img.src=path;await img.decode();return img}));
-  if(task!==run)return;
-  progress(2);if(images.some(img=>!img.naturalWidth||!img.naturalHeight))throw Error();
-  progress(3);status.textContent='جاهز للعرض في الموقع';title.textContent='تجربتك المجانية لكتاب '+name+' جاهزة ✓';view.hidden=false;
- }catch{if(task===run){status.textContent='تعذّر تحميل الصفحتين. تحقق من الاتصال وأعد المحاولة.';retry.hidden=false;rows.forEach(row=>{if(row.dataset.state==='busy')row.querySelector('small').textContent='تعذّر الإكمال'})}}
+ const fingerprint=await previewFingerprint(key);
+ let saved=null;
+ try{saved=JSON.parse(localStorage.getItem('alwan-preview')||'null')}catch{}
+ if(!saved||saved.fingerprint!==fingerprint||!saved.id||!saved.token){
+  const response=await fetch('/api/previews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+   aiProcessingConsent:true,
+   child:{name:kids[0].child,gender:kids[0].gender,age:Number(kids[0].age),interests:kids[0].extra,photo:kids[0].photo}
+  })});
+  const result=await response.json();
+  if(!response.ok)throw Error(result.error||'تعذّر حفظ المعاينة');
+  saved={id:result.id,token:result.resumeToken,fingerprint};
+  try{localStorage.setItem('alwan-preview',JSON.stringify(saved))}catch{}
+ }
+ if(task!==run)return;
+ rows.forEach(row=>{row.dataset.state='queued';row.querySelector('small').textContent='محفوظ'});
+ view.href=previewUrl(saved);view.hidden=false;view.textContent='متابعة حالة المعاينة';
+ updateResumePreview();
+ status.textContent='تم حفظ طلب المعاينة والصفحتين في قائمة التوليد. يمكنك إغلاق الصفحة والعودة عبر الرابط المحفوظ؛ ستظهر الصفحتان بعد تفعيل عامل التوليد.';
+ }catch(error){
+ if(task===run){
+  status.textContent=error.message||'تعذّر حفظ المعاينة. حاول مرة أخرى.';
+  retry.hidden=false;
+  rows.forEach(row=>{row.dataset.state='failed';row.querySelector('small').textContent='تعذّر الحفظ'});
+ }
+ }
 }
 document.getElementById('prepare-example').onclick=preparePages;
 document.getElementById('retry-pages').onclick=preparePages;
